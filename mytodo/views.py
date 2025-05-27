@@ -27,11 +27,15 @@ def loginpage(request):
             messages.info(request, 'Email not registered')
             return redirect('login')
         
+        
         user=authenticate(request,username=email,password=password)
        
 
         if user is None:
             messages.info(request, 'Invalid credentials')
+            return redirect('login')
+        if user.client.status == 'inactive':
+            messages.info(request, 'Your account is inactive contact admin to activate it')
             return redirect('login')
         
         #if user is not None :
@@ -87,25 +91,55 @@ def registerpage(request):
 
 #-------------------------------home page------------------------------------------------------
 
-@login_required(login_url='login')
-def homepage(request):
+#@login_required(login_url='login')
+# def homepage(request):
 
+#     if not request.user.is_authenticated:
+#         return redirect('login')
+
+#     client_obj = client.objects.get(user=request.user)
+
+#     if request.method == 'POST' and request.clientobj.status == 'active':
+#         content = request.POST.get('htmlContent')
+#         if not content:
+#             messages.warning(request, '⚠️ Content is required')
+#             return redirect('homepage')
+#         # allowed_tags = bleach.sanitizer.ALLOWED_TAGS + ['p', 'div', 'br', 'span', 'ul', 'li', 'strong', 'em', 'blockquote','h1']
+#         # clean_content = bleach.clean(content, tags=allowed_tags)
+#         # post.objects.create(client=client_obj, content=clean_content)
+#         post.objects.create(client=client_obj, content=content)
+#         messages.success(request, 'Post created successfully')
+#         return redirect('homepage')
+
+#     posts = post.objects.filter(client=client_obj).order_by('created_at')
+#     if not posts.exists():
+#         messages.info(request, 'ℹ️ No posts available')
+
+#     return render(request, 'mytodo/home.html', {
+#         'user': request.user,
+#         'client_obj': client_obj,
+#         'posts': posts,
+#     })
+
+def homepage(request):
     if not request.user.is_authenticated:
         return redirect('login')
 
     client_obj = client.objects.get(user=request.user)
 
     if request.method == 'POST':
-        content = request.POST.get('htmlContent')
-        if not content:
-            messages.warning(request, '⚠️ Content is required')
+        if client_obj.status == 'active':
+            content = request.POST.get('htmlContent')
+            if not content:
+                messages.warning(request, '⚠️ Content is required')
+                return redirect('homepage')
+
+            post.objects.create(client=client_obj, content=content)
+            messages.success(request, '✅ Post created successfully')
             return redirect('homepage')
-        # allowed_tags = bleach.sanitizer.ALLOWED_TAGS + ['p', 'div', 'br', 'span', 'ul', 'li', 'strong', 'em', 'blockquote','h1']
-        # clean_content = bleach.clean(content, tags=allowed_tags)
-        # post.objects.create(client=client_obj, content=clean_content)
-        post.objects.create(client=client_obj, content=content)
-        messages.success(request, 'Post created successfully')
-        return redirect('homepage')
+        else:
+            messages.info(request, '🚫 Your account is inactive you automatically logout from the system')
+            return redirect('logout')  # or 'login'
 
     posts = post.objects.filter(client=client_obj).order_by('created_at')
     if not posts.exists():
@@ -116,7 +150,10 @@ def homepage(request):
         'client_obj': client_obj,
         'posts': posts,
     })
+
+
     
+
 
 
 #-----------------------------logout-----------------------------------------------------------------
