@@ -191,14 +191,33 @@
     <h2>Virtual Diary Register</h2>
     <form method="POST" action="">
       {% csrf_token %}
-      {% if messages %}
+      <!-- {% if messages %}
       <div class="alert" role="alert">
         {% for message in messages %}
           {{ message }}
         {% endfor %}
       </div>
-      {% endif %}
-
+      {% endif %} -->
+      {% if messages %}
+      <div id="message-container">
+        {% for message in messages %}
+          <div class="alert alert-info">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    
+      <script>
+        // Automatically hide messages after 3 seconds
+        setTimeout(function() {
+          const msg = document.getElementById('message-container');
+          if (msg) {
+            msg.style.display = 'none';
+          }
+        }, 3000);
+      </script>
+    {% endif %}
+    
       <div class="mb-4 text-start">
         <label for="fullname" class="form-label">Full Name</label>
         <input

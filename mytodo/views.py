@@ -65,9 +65,9 @@ def registerpage(request):
         email = email.lower()
 
         user = User.objects.filter(email=email)
-        if user.exists():
-            messages.info(request, 'Email already registered')
-            return render(request,'mytodo/register.html')
+        if User.objects.filter(email=email).exists():
+            messages.info(request, '⚠️ Email already registered')
+            return render(request, 'mytodo/register.html')
         
         user = User.objects.create_user(
             first_name=name,
@@ -142,8 +142,8 @@ def homepage(request):
             return redirect('logout')  # or 'login'
 
     posts = post.objects.filter(client=client_obj).order_by('created_at')
-    if not posts.exists():
-        messages.info(request, 'ℹ️ No posts available')
+    # if not posts.exists():
+    #     messages.info(request, 'ℹ️ No posts available')
 
     return render(request, 'mytodo/home.html', {
         'user': request.user,
