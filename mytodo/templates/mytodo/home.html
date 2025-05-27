@@ -22,6 +22,51 @@
       position: relative;
     }
 
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      padding-top: 70px;
+      padding-bottom: 150px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #8bc6ec, #9599e2);
+      background-attachment: fixed;
+      background-size: cover;
+      position: relative;
+    }
+
+    #background-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .chat-container {
+      max-width: 600px;
+      margin: 20px auto 130px auto;
+      padding: 20px 25px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+      font-size: 1rem;
+      color: #333;
+      height: calc(100vh - 350px);
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
     .navbar {
       background: linear-gradient(135deg, #8bc6ec, #9599e2);
     }
@@ -44,21 +89,6 @@
     .btn-logout:hover {
       background-color: white;
       color: #7b8bd1;
-    }
-
-    .chat-container {
-      max-width: 600px;
-      margin: 20px auto 130px auto;
-      padding: 20px 25px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-      font-size: 1rem;
-      color: #333;
-      min-height: 300px;
-      overflow-y: auto;
-      scroll-behavior: smooth;
-      overflow: auto;
     }
 
     .message {
@@ -124,15 +154,6 @@
       background: linear-gradient(90deg, #b4c5f4, #7b8bd1);
     }
 
-    #background-canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-      background: transparent;
-    }
   </style>
 </head>
 <body>
@@ -150,16 +171,6 @@
     </div>
   </div>
 </nav>
-
-<!-- {% if messages %}
-  <div class="container mt-2">
-    {% for message in messages %}
-      <div class="alert alert-success" role="alert">
-        {{ message }}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %} -->
 
 {% if messages %}
   <div id="message-container">
@@ -181,13 +192,6 @@
   </script>
 {% endif %}
 
-
-
-
-
-
-
-
 <div class="chat-container" id="chat-box">
   {% if posts %}
     {% for post in posts %}
@@ -198,6 +202,7 @@
     <div class="text-center text-muted mt-5">No posts yet. Start by writing your first one!</div>
   {% endif %}
 </div>
+
 <script>
   {% if messages %}
     {% for message in messages %}
@@ -206,11 +211,10 @@
         "progressBar": true,
         "positionClass": "toast-top-right"
       };
-      toastr["{{ message.tags|default:"success" }}"]("{{ message|escapejs }}");
+      toastr["{{ message.tags|default:'success' }}"]("{{ message|escapejs }}");
     {% endfor %}
   {% endif %}
 </script>
-
 
 <div id="editor-container">
   <div id="toolbar-container">
@@ -273,10 +277,11 @@
   const chatBox = document.getElementById("chat-box");
   chatBox.scrollTop = chatBox.scrollHeight;
 
-  // Rain and pixels animation
+  // Canvas background animations
   const canvas = document.getElementById('background-canvas');
   const ctx = canvas.getContext('2d');
   let drops = [];
+  let particles = [];
 
   function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -286,6 +291,7 @@
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
+  // Rain drops
   function createDrop() {
     return {
       x: Math.random() * canvas.width,
@@ -298,30 +304,72 @@
 
   for (let i = 0; i < 150; i++) drops.push(createDrop());
 
-  function drawRain() {
+  // Floating particles
+  function createParticle() {
+    return {
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 2 + 1,
+      alpha: Math.random() * 0.5 + 0.1,
+      dx: (Math.random() - 0.5) * 0.3,
+      dy: (Math.random() - 0.5) * 0.3
+    };
+  }
+
+  for (let i = 0; i < 50; i++) particles.push(createParticle());
+
+  function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "rgba(174,194,224,0.5)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i < drops.length; i++) {
-      let d = drops[i];
-      ctx.moveTo(d.x, d.y);
-      ctx.lineTo(d.x + d.xs, d.y + d.l);
-    }
-    ctx.stroke();
-    moveRain();
+
+    // Draw floating particles (soft white glowing dots)
+    particles.forEach(p => {
+      ctx.beginPath();
+      let gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 5);
+      gradient.addColorStop(0, `rgba(255, 255, 255, ${p.alpha})`);
+      gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = gradient;
+      ctx.arc(p.x, p.y, p.radius * 5, 0, Math.PI * 2, false);
+      ctx.fill();
+
+      // Move particle
+      p.x += p.dx;
+      p.y += p.dy;
+
+      // Wrap around screen edges
+      if (p.x < 0) p.x = canvas.width;
+      if (p.x > canvas.width) p.x = 0;
+      if (p.y < 0) p.y = canvas.height;
+      if (p.y > canvas.height) p.y = 0;
+    });
+
+    // Draw rain drops
+    ctx.strokeStyle = 'rgba(174,194,224,0.5)';
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+
+    drops.forEach(drop => {
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y);
+      ctx.lineTo(drop.x + drop.l * drop.xs, drop.y + drop.l * drop.ys);
+      ctx.stroke();
+
+      drop.x += drop.xs;
+      drop.y += drop.ys;
+
+      if (drop.x > canvas.width || drop.y > canvas.height) {
+        drop.x = Math.random() * canvas.width;
+        drop.y = -20;
+      }
+    });
+
+    requestAnimationFrame(draw);
   }
 
-  function moveRain() {
-    for (let i = 0; i < drops.length; i++) {
-      let d = drops[i];
-      d.x += d.xs;
-      d.y += d.ys;
-      if (d.y > canvas.height) drops[i] = createDrop();
-    }
-  }
+  draw();
 
-  setInterval(drawRain, 30);
+  
+
 </script>
+
 </body>
 </html>
